@@ -11,10 +11,11 @@ Admin account is
 # Prerequisites
 
 1. docker toolkit installed
-2. Java 8 installed
-3. Following ports available
+1. Java 8 installed
+1. Following ports available
     * 8000-8020
-4. Optionally download the MarkLogicConverters.rpm  for the specific MarkLogic version into the root folder of this project
+1. Have available a docker image for the desired MarkLogic version or be connected to MarkLogic's internal docker registry(Need VPN)
+1. Optionally download the MarkLogicConverters.rpm  for the specific MarkLogic version into the root folder of this project
 
 # Installation steps (once off)
 This docker-compose makes use of marklogic precreated images so you need to be onthe MarkLogic VPN and you need to login:
