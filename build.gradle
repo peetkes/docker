@@ -1,0 +1,68 @@
+plugins {
+    // gradle -PenvironmentName=x ...
+    id 'net.saliman.properties' version '1.5.1'
+    id 'com.avast.gradle.docker-compose' version "0.13.0"
+}
+dockerCompose {
+    waitForTcpPorts = false
+    stopContainers = true // doesn't call `docker-compose down` if set to false - see below the paragraph about reconnecting; default is true
+    removeContainers = false // default is true
+    projectName = project.property("projectName")
+}
+
+task mlDockerSetupNode(dependsOn:composeUp)  {
+  doLast {
+    sleep(5 * 1000) //ensure node is up
+    def init = exec {
+      ignoreExitValue true
+      if (project.hasProperty('mlPassword'))
+        commandLine 'docker', 'exec', mlHost, 'init-marklogic', '-p', mlPassword
+      else 
+        commandLine 'docker', 'exec', mlHost, 'init-marklogic'
+    }
+    if(init.getExitValue() == 0) {
+        logger.info("INIT SUCCESSFULL")
+    } else {
+        logger.info("INIT FAILED")
+    }
+  }
+}
+
+task mlDockerInstallConverters() {
+  doLast {
+      if (project.hasProperty('mlConverterInstaller')) {
+        exec {
+          commandLine 'docker', 'cp', mlConverterInstaller, mlHost + ':tmp/.'
+        }
+        exec {
+          commandLine 'docker', 'cp', 'ml-converters-install',  mlHost + ':usr/local/sbin/ml-converters-install'
+        }
+        exec {
+          commandLine 'docker', 'exec', mlHost, 'ml-converters-install'
+        }
+    }
+  }
+}
+
+task mlDockerStart(dependsOn:composeUp)
+
+task mlDockerRestart(type:Exec) {
+  commandLine "docker", "restart", mlHost
+}
+
+task mlDockerStop(type:Exec) {
+  commandLine "docker", "stop", mlHost
+}
+
+mlDockerSetupNode.finalizedBy(mlDockerInstallConverters)
+mlDockerInstallConverters.finalizedBy(mlDockerRestart)
+
+task mlDockerTeardown(type: Delete, dependsOn:composeDown) {
+  //remove logs directory
+  delete 'logs'
+    doLast {
+    exec {
+      commandLine 'docker', 'rm', mlHost
+    }
+  }
+}

@@ -1,0 +1,25 @@
+version: '3.8'
+
+networks:
+  marklogicDHF:
+        driver: bridge
+        name: marklogicDHF
+
+services:
+  mlnode1:
+    image: mlregistry.marklogic.com/marklogic/ml-${mlVersion}
+    ports:
+        - ${mlPortMapping}
+    hostname: "${mlHost}"
+    container_name: "${mlHost}"
+    environment:
+      - MARKLOGIC_INIT=true
+      - MARKLOGIC_ADMIN_USERNAME=${mlAdmin}
+      - MARKLOGIC_ADMIN_PASSWORD=${mlPassword}
+      - TZ=Europe/Prague
+    volumes:
+      - ./volumes/${mlHost}/:/var/opt/MarkLogic/:delegated
+      - ./logs/${mlHost}:/var/opt/MarkLogic/Logs
+      - ./Data:/data
+    networks:
+      - marklogicDHF
