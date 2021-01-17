@@ -1,0 +1,49 @@
+plugins {
+    // gradle -PenvironmentName=x ...
+    id 'net.saliman.properties' version '1.5.1'
+    id 'com.avast.gradle.docker-compose' version "0.13.0"
+}
+dockerCompose {
+    waitForTcpPorts = false
+    stopContainers = true // doesn't call `docker-compose down` if set to false - see below the paragraph about reconnecting; default is true
+    removeContainers = false // default is true
+    projectName = project.property("projectName")
+}
+
+task dockerSetupMarkLogicNode(dependsOn:composeUp)  {
+  doLast {
+    sleep(5 * 1000) //ensure node is up
+    def init = exec {
+      ignoreExitValue true
+      if (project.hasProperty('mlPassword'))
+        commandLine 'docker', 'exec', mlHost, 'init-marklogic', '-p', mlPassword
+      else 
+        commandLine 'docker', 'exec', mlHost, 'init-marklogic'
+    }
+    if(init.getExitValue() == 0) {
+        logger.info("INIT SUCCESSFULL")
+    } else {
+        logger.info("INIT FAILED")
+    }
+  }
+}
+
+task dockerStart(dependsOn:composeUp)
+
+task dockerRestart(type:Exec) {
+  commandLine "docker", "restart", mlHost, mvnHost, devHost
+}
+
+task dockerStop(type:Exec) {
+  commandLine "docker", "stop", mlHost, mvnHost, devHost
+}
+
+task dockerTeardown(type: Delete, dependsOn:composeDown) {
+  //remove logs directory
+  delete 'logs'
+    doLast {
+    exec {
+      commandLine 'docker', 'rm', mlHost, mvnHost, devHost
+    }
+  }
+}

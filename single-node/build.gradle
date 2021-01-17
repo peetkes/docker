@@ -10,7 +10,7 @@ dockerCompose {
     projectName = project.property("projectName")
 }
 
-task mlDockerSetupNode(dependsOn:composeUp)  {
+task dockerSetupMarkLogicNode(dependsOn:composeUp)  {
   doLast {
     sleep(5 * 1000) //ensure node is up
     def init = exec {
@@ -28,39 +28,20 @@ task mlDockerSetupNode(dependsOn:composeUp)  {
   }
 }
 
-task mlDockerInstallConverters() {
-  doLast {
-      if (project.hasProperty('mlConverterInstaller')) {
-        exec {
-          commandLine 'docker', 'cp', mlConverterInstaller, mlHost + ':tmp/.'
-        }
-        exec {
-          commandLine 'docker', 'cp', 'ml-converters-install',  mlHost + ':usr/local/sbin/ml-converters-install'
-        }
-        exec {
-          commandLine 'docker', 'exec', mlHost, 'ml-converters-install'
-        }
-    }
-  }
-}
+task dockerStart(dependsOn:composeUp)
 
-task mlDockerStart(dependsOn:composeUp)
-
-task mlDockerRestart(type:Exec) {
+task dockerRestart(type:Exec) {
   commandLine "docker", "restart", mlHost
 }
 
-task mlDockerStop(type:Exec) {
+task dockerStop(type:Exec) {
   commandLine "docker", "stop", mlHost
 }
 
-mlDockerSetupNode.finalizedBy(mlDockerInstallConverters)
-mlDockerInstallConverters.finalizedBy(mlDockerRestart)
-
-task mlDockerTeardown(type: Delete, dependsOn:composeDown) {
+task dockerTeardown(type: Delete, dependsOn:composeDown) {
   //remove logs directory
   delete 'logs'
-    doLast {
+  doLast {
     exec {
       commandLine 'docker', 'rm', mlHost
     }

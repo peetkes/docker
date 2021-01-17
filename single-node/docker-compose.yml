@@ -2,12 +2,13 @@ version: '3.8'
 
 networks:
   marklogicDHF:
-        driver: bridge
-        name: marklogicDHF
+    driver: bridge
+    name: marklogicDHF
 
 services:
   mlnode1:
-    image: mlregistry.marklogic.com/marklogic/ml-${mlVersion}
+    build: "./src/marklogic"
+    image: "marklogic:${mlVersion}"
     ports:
         - ${mlPortMapping}
     hostname: "${mlHost}"

@@ -1,0 +1,58 @@
+version: '3.8'
+
+networks:
+  multiNodeNetwork:
+    driver: bridge
+    name: multiNodeNetwork
+
+services:
+  marklogic:
+    build: "./src/marklogic"
+    image: "marklogic:${mlVersion}"
+    ports:
+        - "${mlPorts}:${mlPortMappings}"
+    hostname: "${mlHost}"
+    container_name: "${mlHost}"
+    environment:
+      - MARKLOGIC_INIT=true
+      - MARKLOGIC_ADMIN_USERNAME=${mlAdmin}
+      - MARKLOGIC_ADMIN_PASSWORD=${mlPassword}
+      - TZ=Europe/Prague
+    volumes:
+      - ./volumes/${mlHost}/:/var/opt/MarkLogic/:delegated
+      - ./logs/${mlHost}:/var/opt/MarkLogic/Logs
+      - ./Data:/data
+    networks:
+      - multiNodeNetwork
+
+  maven:
+    image: "spring-boot:1"
+    build: "./src/maven"
+    ports:
+      - "${mvnApplicationPort}:${mvnApplicationPortMapping}"
+      - "${mvnApplicationDebugPort}:${mvnApplicationDebugPortMapping}"
+    hostname: "${mvnHost}"
+    container_name: "${mvnHost}"
+    depends_on:
+      - marklogic
+    volumes:
+      - ${mvnApplicationFolder}:/usr/src/application
+      - ${mavenSettingsFolder}:/root/.m2   # comment this line if you do not want to use you local maven settings or if you do not have a local maven installed
+    networks:
+    - multiNodeNetwork
+
+  develop:
+    image: "development:1"
+    build: "./src/development"
+    ports:
+      - "${devApplicationPort}:${devApplicationPortMapping}"
+      - "${devApplicationDebugPort}:${devApplicationDebugPortMapping}"
+    hostname: "${devHost}"
+    container_name: "${devHost}"
+    depends_on:
+      - marklogic
+    volumes:
+      - ${devApplicationFolder}:/usr/src/application
+      - ${mavenSettingsFolder}:/root/.m2   # comment this line if you do not want to use you local maven settings or if you do not have a local maven installed
+    networks:
+    - multiNodeNetwork
