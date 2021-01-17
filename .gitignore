@@ -2,3 +2,6 @@
 volumes/
 logs/
 Data/
+docker-demo/target
+.env
+*.rpm
