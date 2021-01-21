@@ -1,16 +1,30 @@
 plugins {
     // gradle -PenvironmentName=x ...
     id 'net.saliman.properties' version '1.5.1'
-    id 'com.avast.gradle.docker-compose' version "0.13.0"
+    id 'com.avast.gradle.docker-compose' version "0.14.0"
 }
+
 dockerCompose {
     waitForTcpPorts = false
     stopContainers = true // doesn't call `docker-compose down` if set to false - see below the paragraph about reconnecting; default is true
     removeContainers = false // default is true
+    captureContainersOutputToFiles = 'logs/docker'
     projectName = project.property("projectName")
+    environment.put "mlVersion", mlVersion
+    environment.put "mlHost", mlHost
+    environment.put "mlAdmin", mlAdmin
+    environment.put "mlPassword", mlPassword
+    environment.put "mlHealthPort", mlHealthPort
+    environment.put "mlForeignBindPort", mlForeignBindPort
+    environment.put "mlBindPort", mlBindPort
+    environment.put "mlServicesPort", mlServicesPort
+    environment.put "mlAdminPort", mlAdminPort
+    environment.put "mlManagePort", mlManagePort
+    environment.put "mlAppPorts", mlAppPorts
+    environment.put "dataFolder", dataFolder
 }
 
-task dockerSetupMarkLogicNode(dependsOn:composeUp)  {
+task composeSetupMarkLogicNode(dependsOn:composeUp)  {
   doLast {
     sleep(5 * 1000) //ensure node is up
     def init = exec {
@@ -28,19 +42,13 @@ task dockerSetupMarkLogicNode(dependsOn:composeUp)  {
   }
 }
 
-task dockerStart(dependsOn:composeUp)
-
-task dockerRestart(type:Exec) {
-  commandLine "docker", "restart", mlHost
+task composeRestart(dependsOn: composeDown){
+  finalizedBy composeUp
 }
 
-task dockerStop(type:Exec) {
-  commandLine "docker", "stop", mlHost
-}
-
-task dockerTeardown(type: Delete, dependsOn:composeDown) {
+task composeTeardown(type: Delete, dependsOn:composeDown) {
   //remove logs directory
-  delete 'logs'
+  delete 'logs/'+mlHost
   doLast {
     exec {
       commandLine 'docker', 'rm', mlHost

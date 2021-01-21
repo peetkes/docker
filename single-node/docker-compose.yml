@@ -6,11 +6,16 @@ networks:
     name: marklogicDHF
 
 services:
-  mlnode1:
-    build: "./src/marklogic"
-    image: "marklogic:${mlVersion}"
+  marklogic:
+    image: "marklogic:${mlVersion}-installed"
     ports:
-        - ${mlPortMapping}
+        - ${mlHealthPort}:${mlHealthPort}
+        - ${mlForeignBindPort}:${mlForeignBindPort}
+        - ${mlBindPort}:${mlBindPort}
+        - ${mlServicesPort}:${mlServicesPort}
+        - ${mlAdminPort}:${mlAdminPort}
+        - ${mlManagePort}:${mlManagePort}
+        - ${mlAppPorts}:${mlAppPorts}
     hostname: "${mlHost}"
     container_name: "${mlHost}"
     environment:
@@ -19,8 +24,7 @@ services:
       - MARKLOGIC_ADMIN_PASSWORD=${mlPassword}
       - TZ=Europe/Prague
     volumes:
-      - ./volumes/${mlHost}/:/var/opt/MarkLogic/:delegated
       - ./logs/${mlHost}:/var/opt/MarkLogic/Logs
-      - ./Data:/data
+      - ${dataFolder}:/data
     networks:
       - marklogicDHF
